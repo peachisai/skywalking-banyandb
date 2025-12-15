@@ -9,15 +9,22 @@ Release Notes.
 - Remove Bloom filter for dictionary-encoded tags.
 - Implement BanyanDB MCP.
 - Remove check requiring tags in criteria to be present in projection
+- Add sorted query support for the Property.
+- Update bydbQL to add sorted query support for the Property.
+- Remove the windows arch for binary and docker image.
+- Support writing data with specifications.
 
 ### Bug Fixes
 
 - Fix the wrong retention setting of each measure/stream/trace.
 - Fix server got panic when create/update property with high dist usage.
+- Fix incorrect key range update in sidx part metadata.
 
 ### Document
 
 - Add read write benchmark document for 0.9.0 release.
+- Add design of KTM.
+- Add FODC overview doc.
 
 ## 0.9.0
 
