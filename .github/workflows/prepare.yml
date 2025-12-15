@@ -33,14 +33,14 @@ jobs:
         id: cache-tool
         with:
           path: bin
-          key: ${{ runner.os }}-tool-${{ hashFiles('**/version.mk') }}
-          restore-keys: |
-            ${{ runner.os }}-tool-
+          key: ${{ runner.os }}-generate-tool-${{ hashFiles('**/version.mk') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20.12
           cache: 'npm'
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: |
+            ui/package-lock.json
+            mcp/package-lock.json
       - name: Install Go
         uses: actions/setup-go@v5
         with:

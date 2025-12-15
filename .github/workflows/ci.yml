@@ -48,9 +48,7 @@ jobs:
         id: cache-tool
         with:
           path: bin
-          key: ${{ runner.os }}-check-tool-${{ hashFiles('**/version.mk') }}
-          restore-keys: |
-            ${{ runner.os }}-check-tool-
+          key: ${{ runner.os }}-generate-tool-${{ hashFiles('**/version.mk') }}
       - name: npm ci and format
         run: |
           cd ui
@@ -68,7 +66,7 @@ jobs:
         run: make license-check
       - name: Check requirements
         run: make check-req
-      - name: Build binaries and UI dist
+      - name: Build binaries, UI dist and MCP dist
         run: make build
       - name: Setup buf
         uses: bufbuild/buf-setup-action@v1

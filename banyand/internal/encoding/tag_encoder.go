@@ -22,6 +22,7 @@ package encoding
 
 import (
 	stdbytes "bytes"
+	"errors"
 
 	"github.com/apache/skywalking-banyandb/pkg/bytes"
 	"github.com/apache/skywalking-banyandb/pkg/convert"
@@ -113,13 +114,39 @@ func MarshalVarArray(dest, src []byte) []byte {
 	return dest
 }
 
+// UnmarshalVarArray unmarshals a variable-length array into a byte slice.
+func UnmarshalVarArray(dest, src []byte) ([]byte, []byte, error) {
+	if len(src) == 0 {
+		return nil, nil, errors.New("empty entity value")
+	}
+	if src[0] == EntityDelimiter {
+		return dest, src[1:], nil
+	}
+	for len(src) > 0 {
+		switch {
+		case src[0] == Escape:
+			if len(src) < 2 {
+				return nil, nil, errors.New("invalid escape character")
+			}
+			src = src[1:]
+			dest = append(dest, src[0])
+		case src[0] == EntityDelimiter:
+			return dest, src[1:], nil
+		default:
+			dest = append(dest, src[0])
+		}
+		src = src[1:]
+	}
+	return nil, nil, errors.New("invalid variable array")
+}
+
 // EncodeTagValues encodes tag values based on the value type with optimal compression.
 // For int64: uses delta encoding with first value storage.
 // For float64: converts to decimal integers with exponent, then delta encoding.
 // For other types: uses dictionary encoding, falls back to plain with zstd compression.
-func EncodeTagValues(bb *bytes.Buffer, values [][]byte, valueType pbv1.ValueType) error {
+func EncodeTagValues(bb *bytes.Buffer, values [][]byte, valueType pbv1.ValueType) (encoding.EncodeType, error) {
 	if len(values) == 0 {
-		return nil
+		return encoding.EncodeTypeUnknown, nil
 	}
 
 	switch valueType {
@@ -148,7 +175,7 @@ func DecodeTagValues(dst [][]byte, decoder *encoding.BytesBlockDecoder, bb *byte
 	}
 }
 
-func encodeInt64TagValues(bb *bytes.Buffer, values [][]byte) error {
+func encodeInt64TagValues(bb *bytes.Buffer, values [][]byte) (encoding.EncodeType, error) {
 	intValuesPtr := generateInt64Slice(len(values))
 	intValues := *intValuesPtr
 	defer releaseInt64Slice(intValuesPtr)
@@ -160,7 +187,7 @@ func encodeInt64TagValues(bb *bytes.Buffer, values [][]byte) error {
 			bb.Buf = encoding.EncodeBytesBlock(bb.Buf[:0], values)
 			// Prepend EncodeTypePlain at the head of compressed data
 			bb.Buf = append([]byte{byte(encoding.EncodeTypePlain)}, bb.Buf...)
-			return nil
+			return encoding.EncodeTypePlain, nil
 		}
 		if len(v) != 8 {
 			logger.Panicf("invalid value length at index %d: expected 8 bytes, got %d", i, len(v))
@@ -180,10 +207,10 @@ func encodeInt64TagValues(bb *bytes.Buffer, values [][]byte) error {
 		append([]byte{byte(encodeType)}, firstValueBytes...),
 		bb.Buf...,
 	)
-	return nil
+	return encodeType, nil
 }
 
-func encodeFloat64TagValues(bb *bytes.Buffer, values [][]byte) error {
+func encodeFloat64TagValues(bb *bytes.Buffer, values [][]byte) (encoding.EncodeType, error) {
 	intValuesPtr := generateInt64Slice(len(values))
 	intValues := *intValuesPtr
 	defer releaseInt64Slice(intValuesPtr)
@@ -200,7 +227,7 @@ func encodeFloat64TagValues(bb *bytes.Buffer, values [][]byte) error {
 			bb.Buf = encoding.EncodeBytesBlock(bb.Buf[:0], values)
 			// Prepend EncodeTypePlain at the head of compressed data
 			bb.Buf = append([]byte{byte(encoding.EncodeTypePlain)}, bb.Buf...)
-			return nil
+			return encoding.EncodeTypePlain, nil
 		}
 		if len(v) != 8 {
 			logger.Panicf("invalid value length at index %d: expected 8 bytes, got %d", i, len(v))
@@ -214,7 +241,7 @@ func encodeFloat64TagValues(bb *bytes.Buffer, values [][]byte) error {
 		bb.Buf = encoding.EncodeBytesBlock(bb.Buf[:0], values)
 		// Prepend EncodeTypePlain at the head of compressed data
 		bb.Buf = append([]byte{byte(encoding.EncodeTypePlain)}, bb.Buf...)
-		return nil
+		return encoding.EncodeTypePlain, nil
 	}
 
 	var firstValue int64
@@ -230,10 +257,10 @@ func encodeFloat64TagValues(bb *bytes.Buffer, values [][]byte) error {
 		append(append([]byte{byte(encodeType)}, expBytes...), firstValueBytes...),
 		bb.Buf...,
 	)
-	return nil
+	return encodeType, nil
 }
 
-func encodeDefaultTagValues(bb *bytes.Buffer, values [][]byte) error {
+func encodeDefaultTagValues(bb *bytes.Buffer, values [][]byte) (encoding.EncodeType, error) {
 	dict := generateDictionary()
 	defer releaseDictionary(dict)
 
@@ -242,14 +269,14 @@ func encodeDefaultTagValues(bb *bytes.Buffer, values [][]byte) error {
 			// Dictionary encoding failed, use plain encoding with zstd compression
 			bb.Buf = encoding.EncodeBytesBlock(bb.Buf[:0], values)
 			bb.Buf = append([]byte{byte(encoding.EncodeTypePlain)}, bb.Buf...)
-			return nil
+			return encoding.EncodeTypePlain, nil
 		}
 	}
 
 	// Dictionary encoding succeeded
 	bb.Buf = dict.Encode(bb.Buf[:0])
 	bb.Buf = append([]byte{byte(encoding.EncodeTypeDictionary)}, bb.Buf...)
-	return nil
+	return encoding.EncodeTypeDictionary, nil
 }
 
 func decodeInt64TagValues(dst [][]byte, decoder *encoding.BytesBlockDecoder, bb *bytes.Buffer, count uint64) ([][]byte, error) {
