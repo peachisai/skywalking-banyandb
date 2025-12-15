@@ -149,12 +149,18 @@ catalog:
             path: "/operation/mcp/inspector"
           - name: "Build and Package"
             path: "/operation/mcp/build"
+      - name: "First Occurrence Data Collection (FODC)"
+        catalog:
+          - name: "Overview"
+            path: "/operation/fodc/overview"
       - name: "Property Background Repair"
         path: "/concept/property-repair"
       - name: "Benchmark"
         catalog:
-          - name: "v0.9.0"
-            path: "/operation/benchmark/benchmark-0.9.0"
+          - name: "Single‑Model Benchmark (Trace / Log / Measure / Property)"
+            path: "/operation/benchmark/benchmark-single-model"
+          - name: "Hybrid Scenario Benchmark"
+            path: "/operation/benchmark/benchmark-hybrid"
   - name: "File Format"
     catalog:
       - name: "v1.3.0"
