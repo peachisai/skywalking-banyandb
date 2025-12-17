@@ -283,6 +283,7 @@ func (t *topNStreamingProcessor) writeStreamRecord(record flow.StreamRecord, buf
 							},
 						},
 					},
+					Version: time.Now().UnixNano(),
 				},
 			},
 			EntityValues: entityValues,
