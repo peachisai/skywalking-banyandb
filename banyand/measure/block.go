@@ -650,7 +650,7 @@ func (bc *blockCursor) copyTo(r *model.MeasureResult, storedIndexValue map[commo
 	}
 }
 
-func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[common.SeriesID]map[string]*modelv1.TagValue) {
+func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[common.SeriesID]map[string]*modelv1.TagValue, tqo *topNQueryOptions) {
 	r.SID = bc.bm.seriesID
 	r.Timestamps[len(r.Timestamps)-1] = bc.timestamps[bc.idx]
 	r.Versions[len(r.Versions)-1] = bc.versions[bc.idx]
@@ -683,8 +683,61 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 			}
 		}
 	}
+
+	//aggregator := query.CreateTopNPostAggregator(tqo.number, modelv1.AggregationFunction_AGGREGATION_FUNCTION_UNSPECIFIED, tqo.sortDirection)
+
 	for i, c := range bc.fields.columns {
-		r.Fields[i].Values[len(r.Fields[i].Values)-1] = mustDecodeFieldValue(c.valueType, c.values[bc.idx])
+
+		topNValue := GenerateTopNValue()
+		defer ReleaseTopNValue(topNValue)
+		decoder := GenerateTopNValuesDecoder()
+		defer ReleaseTopNValuesDecoder(decoder)
+
+		if tqo != nil {
+
+			srcFieldValue := mustDecodeFieldValue(c.valueType, c.values[bc.idx])
+			destFieldValue := r.Fields[i].Values[len(r.Fields[i].Values)-1]
+
+			topNValue.Reset()
+			if err := topNValue.Unmarshal(srcFieldValue.GetBinaryData(), decoder); err != nil {
+				continue
+			}
+
+			srcEntityValueMap := make(map[string]int64, len(topNValue.entities))
+			for j, entity := range topNValue.entities {
+				entityID := entity[0].String()
+				srcEntityValueMap[entityID] = topNValue.values[j]
+			}
+
+			topNValue.Reset()
+			if err := topNValue.Unmarshal(destFieldValue.GetBinaryData(), decoder); err != nil {
+				log.Error().Err(err).Msg("failed to unmarshal topN value")
+				continue
+			}
+
+			for j, entity := range topNValue.entities {
+				entityID := entity[0].String()
+				if val, ok := srcEntityValueMap[entityID]; ok {
+					topNValue.values[j] = val
+				}
+			}
+
+			buf := make([]byte, 0, 128)
+			buf, err := topNValue.marshal(buf)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to marshal topN value")
+				continue
+			}
+
+			r.Fields[i].Values[len(r.Fields[i].Values)-1] = &modelv1.FieldValue{
+				Value: &modelv1.FieldValue_BinaryData{
+					BinaryData: buf,
+				},
+			}
+		} else {
+			r.Fields[i].Values[len(r.Fields[i].Values)-1] = mustDecodeFieldValue(c.valueType, c.values[bc.idx])
+		}
+
 	}
 }
 

@@ -669,6 +669,21 @@ func ReleaseTopNValue(bi *TopNValue) {
 
 var topNValuePool = pool.Register[*TopNValue]("measure-topNValue")
 
+func GenerateTopNValuesDecoder() *encoding.BytesBlockDecoder {
+	v := topNValuesDecoderPool.Get()
+	if v == nil {
+		return &encoding.BytesBlockDecoder{}
+	}
+	return v
+}
+
+func ReleaseTopNValuesDecoder(d *encoding.BytesBlockDecoder) {
+	d.Reset()
+	topNValuesDecoderPool.Put(d)
+}
+
+var topNValuesDecoderPool = pool.Register[*encoding.BytesBlockDecoder]("topn-valueDecoder")
+
 // TopNValue represents the topN value.
 type TopNValue struct {
 	valueName       string
