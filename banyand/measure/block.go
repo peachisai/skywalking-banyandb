@@ -24,6 +24,7 @@ import (
 
 	"github.com/apache/skywalking-banyandb/api/common"
 	modelv1 "github.com/apache/skywalking-banyandb/api/proto/banyandb/model/v1"
+	"github.com/apache/skywalking-banyandb/banyand/query"
 	"github.com/apache/skywalking-banyandb/pkg/bytes"
 	"github.com/apache/skywalking-banyandb/pkg/encoding"
 	"github.com/apache/skywalking-banyandb/pkg/fs"
@@ -652,7 +653,8 @@ func (bc *blockCursor) copyTo(r *model.MeasureResult, storedIndexValue map[commo
 
 func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[common.SeriesID]map[string]*modelv1.TagValue, tqo *topNQueryOptions) {
 	r.SID = bc.bm.seriesID
-	r.Timestamps[len(r.Timestamps)-1] = bc.timestamps[bc.idx]
+	latestTimeStamp := bc.timestamps[bc.idx]
+	r.Timestamps[len(r.Timestamps)-1] = latestTimeStamp
 	r.Versions[len(r.Versions)-1] = bc.versions[bc.idx]
 	var indexValue map[string]*modelv1.TagValue
 	if storedIndexValue != nil {
@@ -684,17 +686,16 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 		}
 	}
 
-	//aggregator := query.CreateTopNPostAggregator(tqo.number, modelv1.AggregationFunction_AGGREGATION_FUNCTION_UNSPECIFIED, tqo.sortDirection)
+	aggregator := query.CreateTopNPostAggregator(tqo.number, modelv1.AggregationFunction_AGGREGATION_FUNCTION_UNSPECIFIED, tqo.sortDirection)
 
-	for i, c := range bc.fields.columns {
+	if tqo != nil {
 
 		topNValue := GenerateTopNValue()
 		defer ReleaseTopNValue(topNValue)
 		decoder := GenerateTopNValuesDecoder()
 		defer ReleaseTopNValuesDecoder(decoder)
 
-		if tqo != nil {
-
+		for i, c := range bc.fields.columns {
 			srcFieldValue := mustDecodeFieldValue(c.valueType, c.values[bc.idx])
 			destFieldValue := r.Fields[i].Values[len(r.Fields[i].Values)-1]
 
@@ -707,6 +708,18 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 			for j, entity := range topNValue.entities {
 				entityID := entity[0].String()
 				srcEntityValueMap[entityID] = topNValue.values[j]
+			}
+
+			entityValues := make(pbv1.EntityValues, 0, len(topNValue.entityValues))
+			for j, entityList := range topNValue.entities {
+				for _, e := range entityList {
+					entityValues = append(entityValues, e)
+				}
+				aggregator.Load(entityValues, topNValue.values[j], latestTimeStamp, latestTimeStamp)
+			}
+
+			for _, e := range topNValue.entities {
+				entityValues = append(entityValues, e.Value)
 			}
 
 			topNValue.Reset()
@@ -734,10 +747,11 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 					BinaryData: buf,
 				},
 			}
-		} else {
+		}
+	} else {
+		for i, c := range bc.fields.columns {
 			r.Fields[i].Values[len(r.Fields[i].Values)-1] = mustDecodeFieldValue(c.valueType, c.values[bc.idx])
 		}
-
 	}
 }
 
