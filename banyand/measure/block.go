@@ -653,8 +653,7 @@ func (bc *blockCursor) copyTo(r *model.MeasureResult, storedIndexValue map[commo
 
 func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[common.SeriesID]map[string]*modelv1.TagValue, tqo *topNQueryOptions) {
 	r.SID = bc.bm.seriesID
-	latestTimeStamp := bc.timestamps[bc.idx]
-	r.Timestamps[len(r.Timestamps)-1] = latestTimeStamp
+	r.Timestamps[len(r.Timestamps)-1] = bc.timestamps[bc.idx]
 	r.Versions[len(r.Versions)-1] = bc.versions[bc.idx]
 	var indexValue map[string]*modelv1.TagValue
 	if storedIndexValue != nil {
@@ -696,18 +695,12 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 		defer ReleaseTopNValuesDecoder(decoder)
 
 		for i, c := range bc.fields.columns {
-			srcFieldValue := mustDecodeFieldValue(c.valueType, c.values[bc.idx])
-			destFieldValue := r.Fields[i].Values[len(r.Fields[i].Values)-1]
+			srcFieldValue := r.Fields[i].Values[len(r.Fields[i].Values)-1]
+			destFieldValue := mustDecodeFieldValue(c.valueType, c.values[bc.idx])
 
 			topNValue.Reset()
 			if err := topNValue.Unmarshal(srcFieldValue.GetBinaryData(), decoder); err != nil {
 				continue
-			}
-
-			srcEntityValueMap := make(map[string]int64, len(topNValue.entities))
-			for j, entity := range topNValue.entities {
-				entityID := entity[0].String()
-				srcEntityValueMap[entityID] = topNValue.values[j]
 			}
 
 			entityValues := make(pbv1.EntityValues, 0, len(topNValue.entityValues))
@@ -715,11 +708,7 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 				for _, e := range entityList {
 					entityValues = append(entityValues, e)
 				}
-				aggregator.Load(entityValues, topNValue.values[j], latestTimeStamp, latestTimeStamp)
-			}
-
-			for _, e := range topNValue.entities {
-				entityValues = append(entityValues, e.Value)
+				aggregator.Load(entityValues, topNValue.values[j])
 			}
 
 			topNValue.Reset()
@@ -728,11 +717,11 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 				continue
 			}
 
-			for j, entity := range topNValue.entities {
-				entityID := entity[0].String()
-				if val, ok := srcEntityValueMap[entityID]; ok {
-					topNValue.values[j] = val
+			for j, entityList := range topNValue.entities {
+				for _, e := range entityList {
+					entityValues = append(entityValues, e)
 				}
+				aggregator.Load(entityValues, topNValue.values[j])
 			}
 
 			buf := make([]byte, 0, 128)

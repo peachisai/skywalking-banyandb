@@ -223,7 +223,7 @@ func (n *aggregatorItem) GetTags(tagNames []string) []*modelv1.Tag {
 
 // PostProcessor defines necessary methods for Top-N post processor with or without aggregation.
 type PostProcessor interface {
-	Load(entityValues pbv1.EntityValues, val int64, version int64, timestampMillis int64) error
+	Load(entityValues pbv1.EntityValues, val int64) error
 	Put(entityValues pbv1.EntityValues, val int64, timestampMillis uint64, version int64) error
 	Val([]string) []*measurev1.TopNList
 }
@@ -260,7 +260,7 @@ type postAggregationProcessor struct {
 	aggrFunc        modelv1.AggregationFunction
 }
 
-func (aggr postAggregationProcessor) Load(entityValues pbv1.EntityValues, val int64, version int64, timestampMillis int64) error {
+func (aggr postAggregationProcessor) Load(entityValues pbv1.EntityValues, val int64) error {
 	return nil
 }
 
@@ -410,21 +410,16 @@ type postNonAggregationProcessor struct {
 	items     map[string]*topNDuplicateItem
 }
 
-func (naggr *postNonAggregationProcessor) Load(entityValues pbv1.EntityValues, val int64, version int64, timestampMillis int64) error {
-	key := entityValues.String() + "|" + strconv.FormatInt(timestampMillis, 10)
+func (naggr *postNonAggregationProcessor) Load(entityValues pbv1.EntityValues, val int64) error {
+	key := entityValues.String()
 
 	if item, ok := naggr.items[key]; ok {
-		if version > item.version {
-			item.version = version
-			item.value = val
-		}
+		item.value = val
 		return nil
 	}
 
 	naggr.items[key] = &topNDuplicateItem{
-		version:   version,
-		value:     val,
-		timestamp: timestampMillis,
+		value: val,
 	}
 	return nil
 }
@@ -504,7 +499,6 @@ type topNDuplicateProcessor struct {
 }
 
 type topNDuplicateItem struct {
-	version   int64
 	value     int64
 	timestamp int64
 }
