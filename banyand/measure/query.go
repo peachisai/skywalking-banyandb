@@ -176,6 +176,13 @@ func (m *measure) Query(ctx context.Context, mqo model.MeasureQueryOptions) (mqr
 		}
 	}
 
+	if mqo.Name == "_top_n_result" {
+		result.topNQueryOptions = &topNQueryOptions{
+			sortDirection: mqo.Sort,
+			number:        mqo.Number,
+		}
+	}
+
 	return &result, nil
 }
 
@@ -671,6 +678,12 @@ type queryResult struct {
 	loaded           bool
 	orderByTS        bool
 	ascTS            bool
+	topNQueryOptions *topNQueryOptions
+}
+
+type topNQueryOptions struct {
+	sortDirection modelv1.Sort
+	number        int32
 }
 
 func (qr *queryResult) Pull() *model.MeasureResult {
@@ -835,10 +848,11 @@ func (qr *queryResult) merge(storedIndexValue map[common.SeriesID]map[string]*mo
 		}
 		lastSid = topBC.bm.seriesID
 
-		if len(result.Timestamps) > 0 &&
-			topBC.timestamps[topBC.idx] == result.Timestamps[len(result.Timestamps)-1] {
+		if len(result.Timestamps) > 0 {
+			//if len(result.Timestamps) > 0 &&
+			//topBC.timestamps[topBC.idx] == result.Timestamps[len(result.Timestamps)-1] {
 			if topBC.versions[topBC.idx] > lastVersion {
-				topBC.replace(result, storedIndexValue)
+				topBC.replace(result, storedIndexValue, qr.topNQueryOptions)
 			}
 		} else {
 			topBC.copyTo(result, storedIndexValue, tagProjection)

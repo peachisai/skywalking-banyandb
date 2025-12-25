@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -186,12 +187,14 @@ func toTopNResponse(dps []*measurev1.DataPoint) *measurev1.TopNResponse {
 	topNItems := make([]*measurev1.TopNList_Item, len(dps))
 	for i, dp := range dps {
 		topNItems[i] = &measurev1.TopNList_Item{
-			Entity: dp.GetTagFamilies()[0].GetTags(),
-			Value:  dp.GetFields()[0].GetValue(),
+			Entity:  dp.GetTagFamilies()[0].GetTags(),
+			Value:   dp.GetFields()[0].GetValue(),
+			Version: dp.GetVersion(),
 		}
 	}
 	topNList = append(topNList, &measurev1.TopNList{
-		Items: topNItems,
+		Timestamp: dps[0].GetTimestamp(),
+		Items:     topNItems,
 	})
 	return &measurev1.TopNResponse{Lists: topNList}
 }
@@ -203,6 +206,8 @@ type aggregatorItem struct {
 	key       string
 	values    pbv1.EntityValues
 	index     int
+	version   int64
+	val       int64
 }
 
 func (n *aggregatorItem) GetTags(tagNames []string) []*modelv1.Tag {
@@ -218,7 +223,8 @@ func (n *aggregatorItem) GetTags(tagNames []string) []*modelv1.Tag {
 
 // PostProcessor defines necessary methods for Top-N post processor with or without aggregation.
 type PostProcessor interface {
-	Put(entityValues pbv1.EntityValues, val int64, timestampMillis uint64) error
+	Load(entityValues pbv1.EntityValues, val int64) error
+	Put(entityValues pbv1.EntityValues, val int64, timestampMillis uint64, version int64) error
 	Val([]string) []*measurev1.TopNList
 }
 
@@ -230,6 +236,7 @@ func CreateTopNPostAggregator(topN int32, aggrFunc modelv1.AggregationFunction, 
 			topN:      topN,
 			sort:      sort,
 			timelines: make(map[uint64]*flow.DedupPriorityQueue),
+			items:     make(map[string]*topNDuplicateItem),
 		}
 	}
 	aggregator := &postAggregationProcessor{
@@ -251,6 +258,10 @@ type postAggregationProcessor struct {
 	topN            int32
 	sort            modelv1.Sort
 	aggrFunc        modelv1.AggregationFunction
+}
+
+func (aggr postAggregationProcessor) Load(entityValues pbv1.EntityValues, val int64) error {
+	return nil
 }
 
 func (aggr postAggregationProcessor) Len() int {
@@ -290,14 +301,19 @@ func (aggr *postAggregationProcessor) Pop() any {
 	return item
 }
 
-func (aggr *postAggregationProcessor) Put(entityValues pbv1.EntityValues, val int64, timestampMillis uint64) error {
+func (aggr *postAggregationProcessor) Put(entityValues pbv1.EntityValues, val int64, timestampMillis uint64, version int64) error {
 	// update latest ts
 	if aggr.latestTimestamp < timestampMillis {
 		aggr.latestTimestamp = timestampMillis
 	}
-	key := entityValues.String()
+
+	key := entityValues.String() + "|" + strconv.FormatUint(timestampMillis, 10)
+
 	if item, found := aggr.cache[key]; found {
-		item.int64Func.In(val)
+		if item.version < version {
+			item.val = val
+		}
+		//item.int64Func.In(val)
 		return nil
 	}
 
@@ -309,6 +325,7 @@ func (aggr *postAggregationProcessor) Put(entityValues pbv1.EntityValues, val in
 		key:       key,
 		int64Func: aggrFunc,
 		values:    entityValues,
+		version:   version,
 	}
 	item.int64Func.In(val)
 
@@ -390,6 +407,21 @@ type postNonAggregationProcessor struct {
 	timelines map[uint64]*flow.DedupPriorityQueue
 	topN      int32
 	sort      modelv1.Sort
+	items     map[string]*topNDuplicateItem
+}
+
+func (naggr *postNonAggregationProcessor) Load(entityValues pbv1.EntityValues, val int64) error {
+	key := entityValues.String()
+
+	if item, ok := naggr.items[key]; ok {
+		item.value = val
+		return nil
+	}
+
+	naggr.items[key] = &topNDuplicateItem{
+		value: val,
+	}
+	return nil
 }
 
 func (naggr *postNonAggregationProcessor) Val(tagNames []string) []*measurev1.TopNList {
@@ -423,7 +455,7 @@ func (naggr *postNonAggregationProcessor) Val(tagNames []string) []*measurev1.To
 	return topNLists
 }
 
-func (naggr *postNonAggregationProcessor) Put(entityValues pbv1.EntityValues, val int64, timestampMillis uint64) error {
+func (naggr *postNonAggregationProcessor) Put(entityValues pbv1.EntityValues, val int64, timestampMillis uint64, version int64) error {
 	key := entityValues.String()
 	if timeline, ok := naggr.timelines[timestampMillis]; ok {
 		if timeline.Len() < int(naggr.topN) {
@@ -460,4 +492,19 @@ func (naggr *postNonAggregationProcessor) Put(entityValues pbv1.EntityValues, va
 	heap.Push(timeline, &nonAggregatorItem{val: val, key: key, values: entityValues})
 
 	return nil
+}
+
+type topNDuplicateProcessor struct {
+	items map[string]*topNDuplicateItem
+}
+
+type topNDuplicateItem struct {
+	value     int64
+	timestamp int64
+}
+
+func newTopNDuplicateProcessor() *topNDuplicateProcessor {
+	return &topNDuplicateProcessor{
+		items: make(map[string]*topNDuplicateItem),
+	}
 }
