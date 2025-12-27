@@ -71,6 +71,11 @@ type queryOptions struct {
 	maxTimestamp int64
 }
 
+type topNQueryOptions struct {
+	sortDirection modelv1.Sort
+	number        int32
+}
+
 func (m *measure) Query(ctx context.Context, mqo model.MeasureQueryOptions) (mqr model.MeasureQueryResult, err error) {
 	if mqo.TimeRange == nil {
 		return nil, errors.New("invalid query options: timeRange are required")
@@ -189,6 +194,13 @@ func (m *measure) Query(ctx context.Context, mqo model.MeasureQueryOptions) (mqr
 			result.orderByTS = false
 		case index.OrderByTypeSeries:
 			result.orderByTS = false
+		}
+	}
+
+	if mqo.Name == "_top_n_result" {
+		result.topNQueryOptions = &topNQueryOptions{
+			sortDirection: mqo.Sort,
+			number:        mqo.Number,
 		}
 	}
 
@@ -751,6 +763,7 @@ type queryResult struct {
 	loaded           bool
 	orderByTS        bool
 	ascTS            bool
+	topNQueryOptions *topNQueryOptions
 }
 
 func (qr *queryResult) Pull() *model.MeasureResult {
@@ -908,6 +921,8 @@ func (qr *queryResult) merge(storedIndexValue map[common.SeriesID]map[string]*mo
 	var lastVersion int64
 	var lastSid common.SeriesID
 
+	aggregator := CreateTopNPostAggregator(qr.topNQueryOptions.number, modelv1.AggregationFunction_AGGREGATION_FUNCTION_UNSPECIFIED, qr.topNQueryOptions.sortDirection)
+
 	for qr.Len() > 0 {
 		topBC := qr.data[0]
 		if lastSid != 0 && topBC.bm.seriesID != lastSid {
@@ -915,10 +930,11 @@ func (qr *queryResult) merge(storedIndexValue map[common.SeriesID]map[string]*mo
 		}
 		lastSid = topBC.bm.seriesID
 
-		if len(result.Timestamps) > 0 &&
-			topBC.timestamps[topBC.idx] == result.Timestamps[len(result.Timestamps)-1] {
+		if len(result.Timestamps) > 0 {
+			//if len(result.Timestamps) > 0 &&
+			//	topBC.timestamps[topBC.idx] == result.Timestamps[len(result.Timestamps)-1] {
 			if topBC.versions[topBC.idx] > lastVersion {
-				topBC.replace(result, storedIndexValue)
+				topBC.replace(result, storedIndexValue, qr.topNQueryOptions, aggregator)
 			}
 		} else {
 			topBC.copyTo(result, storedIndexValue, tagProjection)

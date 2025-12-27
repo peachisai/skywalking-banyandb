@@ -262,13 +262,6 @@ func (t *topNStreamingProcessor) writeStreamRecord(record flow.StreamRecord, buf
 					},
 				},
 			},
-			{
-				Value: &modelv1.TagValue_Str{
-					Str: &modelv1.Str{
-						Value: t.nodeID,
-					},
-				},
-			},
 		}
 		buf = buf[:0]
 		if buf, err = topNValue.marshal(buf); err != nil {
@@ -290,6 +283,7 @@ func (t *topNStreamingProcessor) writeStreamRecord(record flow.StreamRecord, buf
 							},
 						},
 					},
+					Version: time.Now().UnixNano(),
 				},
 			},
 			EntityValues: entityValues,
@@ -868,3 +862,18 @@ func (t *TopNValue) Unmarshal(src []byte, decoder *encoding.BytesBlockDecoder) e
 func GroupName(groupTags []string) string {
 	return strings.Join(groupTags, "|")
 }
+
+func GenerateTopNValuesDecoder() *encoding.BytesBlockDecoder {
+	v := topNValuesDecoderPool.Get()
+	if v == nil {
+		return &encoding.BytesBlockDecoder{}
+	}
+	return v
+}
+
+func ReleaseTopNValuesDecoder(d *encoding.BytesBlockDecoder) {
+	d.Reset()
+	topNValuesDecoderPool.Put(d)
+}
+
+var topNValuesDecoderPool = pool.Register[*encoding.BytesBlockDecoder]("topn-valueDecoder2")

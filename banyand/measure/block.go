@@ -666,7 +666,7 @@ func (bc *blockCursor) copyTo(r *model.MeasureResult, storedIndexValue map[commo
 	}
 }
 
-func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[common.SeriesID]map[string]*modelv1.TagValue) {
+func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[common.SeriesID]map[string]*modelv1.TagValue, tqo *topNQueryOptions, aggregator PostProcessor) {
 	r.SID = bc.bm.seriesID
 	r.Timestamps[len(r.Timestamps)-1] = bc.timestamps[bc.idx]
 	r.Versions[len(r.Versions)-1] = bc.versions[bc.idx]
@@ -704,8 +704,73 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 			}
 		}
 	}
-	for i, c := range bc.fields.columns {
-		r.Fields[i].Values[len(r.Fields[i].Values)-1] = mustDecodeFieldValue(c.valueType, c.values[bc.idx])
+
+	if tqo != nil {
+		topNValue := GenerateTopNValue()
+		defer ReleaseTopNValue(topNValue)
+		decoder := GenerateTopNValuesDecoder()
+		defer ReleaseTopNValuesDecoder(decoder)
+
+		for i, c := range bc.fields.columns {
+			srcFieldValue := r.Fields[i].Values[len(r.Fields[i].Values)-1]
+			destFieldValue := mustDecodeFieldValue(c.valueType, c.values[bc.idx])
+			topNValue.Reset()
+			if err := topNValue.Unmarshal(srcFieldValue.GetBinaryData(), decoder); err != nil {
+				continue
+			}
+
+			for j, entityList := range topNValue.entities {
+				entityValues := make(pbv1.EntityValues, 0, len(topNValue.entityValues))
+				for _, e := range entityList {
+					entityValues = append(entityValues, e)
+				}
+				aggregator.Load(entityValues, topNValue.values[j])
+			}
+
+			topNValue.Reset()
+			if err := topNValue.Unmarshal(destFieldValue.GetBinaryData(), decoder); err != nil {
+				continue
+			}
+
+			for j, entityList := range topNValue.entities {
+				entityValues := make(pbv1.EntityValues, 0, len(topNValue.entityValues))
+				for _, e := range entityList {
+					entityValues = append(entityValues, e)
+				}
+				aggregator.Load(entityValues, topNValue.values[j])
+			}
+
+			topNValueItems := aggregator.GetTopNValueItem()
+
+			valueName := topNValue.valueName
+			entityTagNames := topNValue.entityTagNames
+
+			topNValue.Reset()
+			topNValue.setMetadata(valueName, entityTagNames)
+
+			for _, item := range topNValueItems {
+				topNValue.addValue(item.value, item.entityValues)
+			}
+
+			buf := make([]byte, 0, 128)
+			buf, err := topNValue.marshal(buf)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to marshal topN value")
+				continue
+			}
+
+			topNValue.Reset()
+
+			r.Fields[i].Values[len(r.Fields[i].Values)-1] = &modelv1.FieldValue{
+				Value: &modelv1.FieldValue_BinaryData{
+					BinaryData: buf,
+				},
+			}
+		}
+	} else {
+		for i, c := range bc.fields.columns {
+			r.Fields[i].Values[len(r.Fields[i].Values)-1] = mustDecodeFieldValue(c.valueType, c.values[bc.idx])
+		}
 	}
 }
 
