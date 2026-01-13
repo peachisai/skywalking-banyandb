@@ -730,7 +730,7 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 			entityTagNames := topNValue.entityTagNames
 
 			for j, entityList := range topNValue.entities {
-				entityValues := make(pbv1.EntityValues, 0, len(topNValue.entityValues))
+				entityValues := make(pbv1.EntityValues, 0, len(entityList))
 				for _, e := range entityList {
 					entityValues = append(entityValues, e)
 				}
@@ -744,7 +744,7 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 			}
 
 			for j, entityList := range topNValue.entities {
-				entityValues := make(pbv1.EntityValues, 0, len(topNValue.entityValues))
+				entityValues := make(pbv1.EntityValues, 0, len(entityList))
 				for _, e := range entityList {
 					entityValues = append(entityValues, e)
 				}
@@ -758,13 +758,13 @@ func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[comm
 			}
 
 			topNValue.Reset()
-			topNValue.SetMetadata(valueName, entityTagNames)
+			topNValue.setMetadata(valueName, entityTagNames)
 
 			for _, item := range items {
-				topNValue.AddValue(item.val, item.values)
+				topNValue.addValue(item.val, item.values)
 			}
 
-			buf, err := topNValue.Marshal(make([]byte, 0, 128))
+			buf, err := topNValue.marshal(make([]byte, 0, 128))
 			if err != nil {
 				log.Error().Err(err).Msg("failed to marshal topN value, skip current batch")
 				continue

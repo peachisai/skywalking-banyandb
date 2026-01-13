@@ -115,7 +115,7 @@ func (t *topNQueryProcessor) Rev(ctx context.Context, message bus.Message) (resp
 		return
 	}
 	var allErr error
-	aggregator := measure.CreateTopNPostAggregator(request.GetTopN(),
+	aggregator := measure.CreateTopNPostProcessor(request.GetTopN(),
 		agg, request.GetFieldValueSort())
 	var tags []string
 	var responseCount int
@@ -157,7 +157,12 @@ func (t *topNQueryProcessor) Rev(ctx context.Context, message bus.Message) (resp
 		resp = bus.NewMessage(now, &measurev1.TopNResponse{})
 		return
 	}
-	lists := aggregator.Val(tags)
+	lists, err := aggregator.Val(tags)
+	if err != nil {
+		resp = bus.NewMessage(now, common.NewError("failed to post-aggregate %s: %v", request.GetName(), err))
+		return
+	}
+
 	if span != nil {
 		span.Tagf("list_count", "%d", len(lists))
 	}

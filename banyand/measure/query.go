@@ -858,7 +858,7 @@ func (qr *queryResult) merge(storedIndexValue map[common.SeriesID]map[string]*mo
 	var topNPostAggregator PostProcessor
 
 	if qr.topNQueryOptions != nil {
-		topNPostAggregator = CreateTopNPostAggregator(qr.topNQueryOptions.number, modelv1.AggregationFunction_AGGREGATION_FUNCTION_UNSPECIFIED,
+		topNPostAggregator = CreateTopNPostProcessor(qr.topNQueryOptions.number, modelv1.AggregationFunction_AGGREGATION_FUNCTION_UNSPECIFIED,
 			qr.topNQueryOptions.sortDirection)
 	}
 

@@ -169,7 +169,7 @@ func TestTopNValue_Unmarshal_InvalidData(t *testing.T) {
 
 func TestTopNValue_SetMetadata(t *testing.T) {
 	topNVal := &TopNValue{}
-	topNVal.SetMetadata("testValue", []string{"tag1", "tag2"})
+	topNVal.setMetadata("testValue", []string{"tag1", "tag2"})
 	require.Equal(t, "testValue", topNVal.valueName)
 	require.Equal(t, []string{"tag1", "tag2"}, topNVal.entityTagNames)
 }
@@ -180,7 +180,7 @@ func TestTopNValue_AddValue(t *testing.T) {
 		{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "svc1"}}},
 		{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity1"}}},
 	}
-	topNVal.AddValue(100, entityValues)
+	topNVal.addValue(100, entityValues)
 	require.Equal(t, []int64{100}, topNVal.values)
 	require.Len(t, topNVal.entities, 1)
 	require.Len(t, topNVal.entities[0], 2)
