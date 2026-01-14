@@ -55,7 +55,7 @@ func (t *topNQueryProcessor) Rev(ctx context.Context, message bus.Message) (resp
 	n := time.Now()
 	now := bus.MessageID(request.TimeRange.Begin.Nanos)
 	if err := t.validateRequest(request); err != nil {
-		resp = bus.NewMessage(now, common.NewError(err.Error()))
+		resp = bus.NewMessage(now, common.NewError("%s", err.Error()))
 		return
 	}
 	if e := t.log.Debug(); e.Enabled() {
