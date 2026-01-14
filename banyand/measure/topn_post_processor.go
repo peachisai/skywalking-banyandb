@@ -38,7 +38,7 @@ type PostProcessor interface {
 	Val([]string) ([]*measurev1.TopNList, error)
 }
 
-// CreateTopNPostAggregator creates a Top-N post processor with or without aggregation.
+// CreateTopNPostProcessor creates a Top-N post processor with or without aggregation.
 func CreateTopNPostProcessor(topN int32, aggrFunc modelv1.AggregationFunction, sort modelv1.Sort) PostProcessor {
 	if aggrFunc == modelv1.AggregationFunction_AGGREGATION_FUNCTION_UNSPECIFIED {
 		// if aggregation is not specified, we have to keep all timelines
@@ -194,11 +194,9 @@ func (taggr *topNPostProcessor) Put(entityValues pbv1.EntityValues, val int64, t
 	}
 
 	if item, exist := timeline.items[key]; exist {
-		if version >= item.version {
-			item.val = val
-			item.version = version
-			heap.Fix(timeline.queue, item.index)
-		}
+		item.val = val
+		item.version = version
+		heap.Fix(timeline.queue, item.index)
 
 		return
 	}
