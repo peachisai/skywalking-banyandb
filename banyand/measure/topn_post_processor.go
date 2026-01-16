@@ -194,9 +194,11 @@ func (taggr *topNPostProcessor) Put(entityValues pbv1.EntityValues, val int64, t
 	}
 
 	if item, exist := timeline.items[key]; exist {
-		item.val = val
-		item.version = version
-		heap.Fix(timeline.queue, item.index)
+		if version >= item.version {
+			item.val = val
+			item.version = version
+			heap.Fix(timeline.queue, item.index)
+		}
 
 		return
 	}
