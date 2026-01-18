@@ -26,7 +26,7 @@ func TestBlockCursor_MergeTopNResult(t *testing.T) {
 			srcTopNVal: &TopNValue{
 				valueName:      "value",
 				entityTagNames: []string{"entity_id"},
-				values:         []int64{100, 200, 300, 400, 500},
+				values:         []int64{1000, 200, 300, 400, 500},
 				entities: [][]*modelv1.TagValue{
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_2"}}}},
@@ -40,11 +40,11 @@ func TestBlockCursor_MergeTopNResult(t *testing.T) {
 				entityTagNames: []string{"entity_id"},
 				values:         []int64{550, 200, 500, 600, 400},
 				entities: [][]*modelv1.TagValue{
-					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
-					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_2"}}}},
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
+					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_6"}}}},
+					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_7"}}}},
 				},
 			},
 			sort: modelv1.Sort_SORT_DESC,
@@ -52,11 +52,11 @@ func TestBlockCursor_MergeTopNResult(t *testing.T) {
 			wantTopNVal: &TopNValue{
 				valueName:      "value",
 				entityTagNames: []string{"entity_id"},
-				values:         []int64{400, 550, 600},
+				values:         []int64{550, 600, 1000},
 				entities: [][]*modelv1.TagValue{
-					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
+					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
+					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_6"}}}},
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
-					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
 				},
 			},
 		},
