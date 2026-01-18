@@ -779,7 +779,6 @@ func (bc *blockCursor) mergeTopNResult(r *model.MeasureResult, storedIndexValue 
 func (bc *blockCursor) replace(r *model.MeasureResult, storedIndexValue map[common.SeriesID]map[string]*modelv1.TagValue) {
 	r.SID = bc.bm.seriesID
 	r.Timestamps[len(r.Timestamps)-1] = bc.timestamps[bc.idx]
-	r.Versions[len(r.Versions)-1] = bc.versions[bc.idx]
 	var indexValue map[string]*modelv1.TagValue
 	if storedIndexValue != nil {
 		indexValue = storedIndexValue[r.SID]
