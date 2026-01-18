@@ -38,7 +38,7 @@ func TestBlockCursor_MergeTopNResult(t *testing.T) {
 			destTopNVal: &TopNValue{
 				valueName:      "value",
 				entityTagNames: []string{"entity_id"},
-				values:         []int64{350, 200, 500, 600, 400},
+				values:         []int64{550, 200, 500, 600, 400},
 				entities: [][]*modelv1.TagValue{
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_2"}}}},
@@ -52,10 +52,10 @@ func TestBlockCursor_MergeTopNResult(t *testing.T) {
 			wantTopNVal: &TopNValue{
 				valueName:      "value",
 				entityTagNames: []string{"entity_id"},
-				values:         []int64{400, 500, 600},
+				values:         []int64{400, 550, 600},
 				entities: [][]*modelv1.TagValue{
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
-					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
+					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
 					{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
 				},
 			},
