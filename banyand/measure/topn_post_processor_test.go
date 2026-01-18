@@ -34,9 +34,9 @@ func TestBlockCursor_MergeTopNResult(t *testing.T) {
 		name        string
 		srcTopNVal  *TopNValue
 		destTopNVal *TopNValue
+		wantTopNVal *TopNValue
 		sort        modelv1.Sort
 		topN        int32
-		wantTopNVal *TopNValue
 	}{
 		{
 			name: "Test block merge TopN result",
