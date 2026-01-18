@@ -20,21 +20,22 @@ package measure
 import (
 	"testing"
 
-	"github.com/apache/skywalking-banyandb/api/common"
-	modelv1 "github.com/apache/skywalking-banyandb/api/proto/banyandb/model/v1"
-	pbv1 "github.com/apache/skywalking-banyandb/pkg/pb/v1"
 	"github.com/apache/skywalking-banyandb/pkg/query/model"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	"github.com/apache/skywalking-banyandb/api/common"
+	modelv1 "github.com/apache/skywalking-banyandb/api/proto/banyandb/model/v1"
+	pbv1 "github.com/apache/skywalking-banyandb/pkg/pb/v1"
 )
 
 func TestBlockCursor_MergeTopNResult(t *testing.T) {
 	tests := []struct {
-		name        string
 		srcTopNVal  *TopNValue
 		destTopNVal *TopNValue
 		wantTopNVal *TopNValue
+		name        string
 		sort        modelv1.Sort
 		topN        int32
 	}{
