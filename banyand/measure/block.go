@@ -779,7 +779,7 @@ func (bc *blockCursor) mergeTopNResult(r *model.MeasureResult, storedIndexValue 
 		}
 	}
 
-	if bc.versions[bc.idx] >= r.Versions[len(r.Versions)-1] {
+	if bc.versions[bc.idx] > r.Versions[len(r.Versions)-1] {
 		r.Versions[len(r.Versions)-1] = bc.versions[bc.idx]
 	}
 }
