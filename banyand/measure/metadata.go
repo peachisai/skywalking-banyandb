@@ -67,7 +67,7 @@ var (
 		CompressionMethod: databasev1.CompressionMethod_COMPRESSION_METHOD_ZSTD,
 	}}
 	// TopNTagNames is the tag names of the topN result measure.
-	TopNTagNames = []string{"name", "direction", "group", "source"}
+	TopNTagNames = []string{"name", "direction", "group", "limit"}
 )
 
 // SchemaService allows querying schema information.
@@ -690,7 +690,7 @@ func GetTopNSchema(md *commonv1.Metadata) *databasev1.Measure {
 					{Name: TopNTagNames[0], Type: databasev1.TagType_TAG_TYPE_STRING},
 					{Name: TopNTagNames[1], Type: databasev1.TagType_TAG_TYPE_INT},
 					{Name: TopNTagNames[2], Type: databasev1.TagType_TAG_TYPE_STRING},
-					{Name: TopNTagNames[3], Type: databasev1.TagType_TAG_TYPE_STRING},
+					{Name: TopNTagNames[3], Type: databasev1.TagType_TAG_TYPE_INT},
 				},
 			},
 		},

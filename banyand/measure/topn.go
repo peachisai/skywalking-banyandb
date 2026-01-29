@@ -386,6 +386,13 @@ func (t *topNStreamingProcessor) writeStreamRecord(record flow.StreamRecord, buf
 					},
 				},
 			},
+			{
+				Value: &modelv1.TagValue_Int{
+					Int: &modelv1.Int{
+						Value: int64(t.topNSchema.CountersNumber),
+					},
+				},
+			},
 		}
 		buf = buf[:0]
 		if buf, err = topNValue.marshal(buf); err != nil {
