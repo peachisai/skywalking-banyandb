@@ -1132,7 +1132,6 @@ func fullFieldAppend(bi, b *blockPointer, offset int) {
 }
 
 func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, right *blockPointer, rightIdx int, topNPostAggregator PostProcessor) {
-
 	topNValue := GenerateTopNValue()
 	defer ReleaseTopNValue(topNValue)
 	decoder := GenerateTopNValuesDecoder()
@@ -1146,6 +1145,8 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 		topNValue.Reset()
 		if err := topNValue.Unmarshal(left.field.columns[idx].values[leftIdx], decoder); err != nil {
 			log.Error().Err(err).Msg("failed to unmarshal topN value, skip current batch")
+			// avoid index out-of-bounds issues
+			bi.field.columns[idx].values = append(bi.field.columns[idx].values, []byte{})
 			continue
 		}
 
@@ -1157,6 +1158,7 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 		topNValue.Reset()
 		if err := topNValue.Unmarshal(right.field.columns[idx].values[rightIdx], decoder); err != nil {
 			log.Error().Err(err).Msg("failed to unmarshal topN value, skip current batch")
+			bi.field.columns[idx].values = append(bi.field.columns[idx].values, []byte{})
 			continue
 		}
 

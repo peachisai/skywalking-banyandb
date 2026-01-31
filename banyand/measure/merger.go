@@ -412,7 +412,6 @@ func mergeTwoBlocks(target, left, right *blockPointer) {
 			i++
 		}
 		if i > left.idx && left.timestamps[i-1] == ts2 {
-
 			if isTopN {
 				target.append(left, i-1)
 				target.mergeAndAppendTopN(left, i-1, right, right.idx, topNProcessor)
@@ -443,7 +442,7 @@ func mergeTwoBlocks(target, left, right *blockPointer) {
 
 func isTopNBlock(b *blockPointer) bool {
 	families := b.tagFamilies
-	if families == nil || len(families) == 0 {
+	if len(families) == 0 {
 		return false
 	}
 
@@ -455,7 +454,6 @@ func isTopNBlock(b *blockPointer) bool {
 }
 
 func parseTopNMeta(b *blockPointer) (modelv1.Sort, int32, error) {
-
 	tf := b.tagFamilies[0]
 
 	sortVal := mustDecodeTagValue(tf.columns[1].valueType, tf.columns[1].values[b.idx])
