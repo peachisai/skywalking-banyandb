@@ -1214,8 +1214,6 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 		bi.appendTagFamilies(left, leftIdx+1)
 		bi.versions = append(bi.versions, leftVer)
 	}
-
-	bi.idx++
 }
 
 func (bi *blockPointer) appendTagFamilies(src *blockPointer, srcIdx int) {
