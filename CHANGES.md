@@ -16,8 +16,12 @@ Release Notes.
 - Support writing data with specifications.
 - Persist series metadata in liaison queue for measure, stream and trace models.
 - Update the dump tool to support analyzing the parts with smeta files.
+- Add replication integration test for measure.
 - Activate the property repair mechanism by default.
 - Add snapshot time retention policy to ensure the snapshot only can be deleted after the configured minimum age(time).
+- **Breaking Change**: Change the data storage path structure for property model:
+  - From: `<data-dir>/property/data/shard-<id>/...`
+  - To: `<data-dir>/property/data/<group>/shard-<id>/...`
 
 ### Bug Fixes
 
