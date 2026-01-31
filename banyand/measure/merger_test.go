@@ -23,12 +23,12 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/apache/skywalking-banyandb/api/proto/banyandb/model/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
 	"github.com/apache/skywalking-banyandb/api/common"
+	modelv1 "github.com/apache/skywalking-banyandb/api/proto/banyandb/model/v1"
 	"github.com/apache/skywalking-banyandb/banyand/protector"
 	"github.com/apache/skywalking-banyandb/pkg/convert"
 	"github.com/apache/skywalking-banyandb/pkg/fs"
@@ -321,50 +321,60 @@ func Test_mergeTwoBlocks(t *testing.T) {
 	}
 }
 
-var leftTopNValue = &TopNValue{
-	valueName:      "value",
-	entityTagNames: []string{"entity_id"},
-	values:         []int64{1000, 200, 300, 400, 500},
-	entities: [][]*modelv1.TagValue{
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_2"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
-	},
-}
+var (
+	leftTopNValue = &TopNValue{
+		valueName:      "value",
+		entityTagNames: []string{"entity_id"},
+		values:         []int64{1000, 200, 300, 400, 500},
+		entities: [][]*modelv1.TagValue{
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_2"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
+		},
+	}
+	rightTopNValue = &TopNValue{
+		valueName:      "value",
+		entityTagNames: []string{"entity_id"},
+		values:         []int64{550, 300, 530, 600, 400},
+		entities: [][]*modelv1.TagValue{
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_6"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_7"}}}},
+		},
+	}
 
-var rightTopNValue = &TopNValue{
-	valueName:      "value",
-	entityTagNames: []string{"entity_id"},
-	values:         []int64{550, 300, 530, 600, 400},
-	entities: [][]*modelv1.TagValue{
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_6"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_7"}}}},
-	},
-}
+	mergedTopNValue = &TopNValue{
+		valueName:      "value",
+		entityTagNames: []string{"entity_id"},
+		values:         []int64{1000, 600, 550, 530, 400, 300, 200},
+		entities: [][]*modelv1.TagValue{
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_6"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_7"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_2"}}}},
+		},
+	}
 
-var mergedTopNValue = &TopNValue{
-	valueName:      "value",
-	entityTagNames: []string{"entity_id"},
-	values:         []int64{1000, 600, 550, 530, 400, 300, 200},
-	entities: [][]*modelv1.TagValue{
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_1"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_6"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_7"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
-		{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_2"}}}},
-	},
-}
-
-var leftTopNBinaryData, _ = leftTopNValue.marshal(make([]byte, 0, 256))
-var rightTopNBinaryData, _ = rightTopNValue.marshal(make([]byte, 0, 256))
-var mergedTopNBinaryData, _ = mergedTopNValue.marshal(make([]byte, 0, 256))
+	leftTopNBinaryData = func() []byte {
+		b, _ := leftTopNValue.marshal(make([]byte, 0, 256))
+		return b
+	}()
+	rightTopNBinaryData = func() []byte {
+		b, _ := rightTopNValue.marshal(make([]byte, 0, 256))
+		return b
+	}()
+	mergedTopNBinaryData = func() []byte {
+		b, _ := mergedTopNValue.marshal(make([]byte, 0, 256))
+		return b
+	}()
+)
 
 // Test_mergeTwoBlocks_edgeCase tests the edge case that previously caused panic:
 // runtime error: index out of range [-1] at merger.go:394.
