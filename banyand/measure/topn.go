@@ -364,6 +364,12 @@ func (t *topNStreamingProcessor) writeStreamRecord(record flow.StreamRecord, buf
 			)
 			shardID = data[3].(uint32)
 		}
+
+		params := &TopNParameters{
+			Limit: int64(t.topNSchema.CountersNumber),
+		}
+		paramsJson := params.String()
+
 		entityValues := []*modelv1.TagValue{
 			{
 				Value: &modelv1.TagValue_Str{
@@ -387,9 +393,9 @@ func (t *topNStreamingProcessor) writeStreamRecord(record flow.StreamRecord, buf
 				},
 			},
 			{
-				Value: &modelv1.TagValue_Int{
-					Int: &modelv1.Int{
-						Value: int64(t.topNSchema.CountersNumber),
+				Value: &modelv1.TagValue_Str{
+					Str: &modelv1.Str{
+						Value: paramsJson,
 					},
 				},
 			},
