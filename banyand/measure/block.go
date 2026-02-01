@@ -743,8 +743,7 @@ func (bc *blockCursor) mergeTopNResult(r *model.MeasureResult, storedIndexValue 
 
 		items, err := topNPostAggregator.Flush()
 		if err != nil {
-			log.Error().Err(err).Msg("failed to flush aggregator, skip current batch")
-			continue
+			log.Panic().Err(err).Msg("failed to flush aggregator")
 		}
 
 		topNValue.Reset()
@@ -756,8 +755,7 @@ func (bc *blockCursor) mergeTopNResult(r *model.MeasureResult, storedIndexValue 
 
 		buf, err := topNValue.marshal(make([]byte, 0, 128))
 		if err != nil {
-			log.Error().Err(err).Msg("failed to marshal topN value, skip current batch")
-			continue
+			log.Panic().Err(err).Msg("failed to flush aggregator")
 		}
 
 		r.Fields[i].Values[len(r.Fields[i].Values)-1] = &modelv1.FieldValue{
@@ -1164,8 +1162,6 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 
 		if err := topNValue.Unmarshal(left.field.columns[idx].values[leftIdx], decoder); err != nil {
 			log.Warn().Err(err).Msg("failed to unmarshal left topN value, ignoring left side")
-			// avoid index out-of-bounds issues
-			bi.field.columns[idx].values = append(bi.field.columns[idx].values, []byte{})
 			continue
 		} else {
 			valueName = topNValue.valueName
@@ -1208,8 +1204,7 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 		marshalBuf = marshalBuf[:0]
 		buf, err := topNValue.marshal(marshalBuf)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to marshal merged topN value")
-			continue
+			log.Panic().Err(err).Msg("failed to marshal merged topN value")
 		}
 
 		bi.field.columns[idx].values = append(bi.field.columns[idx].values, buf)
