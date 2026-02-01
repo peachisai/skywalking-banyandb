@@ -1162,7 +1162,6 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 
 		if err := topNValue.Unmarshal(left.field.columns[idx].values[leftIdx], decoder); err != nil {
 			log.Warn().Err(err).Msg("failed to unmarshal left topN value, ignoring left side")
-			continue
 		} else {
 			valueName = topNValue.valueName
 			entityTagNames = topNValue.entityTagNames
