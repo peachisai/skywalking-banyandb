@@ -743,7 +743,7 @@ func (bc *blockCursor) mergeTopNResult(r *model.MeasureResult, storedIndexValue 
 
 		items, err := topNPostAggregator.Flush()
 		if err != nil {
-			log.Panic().Err(err).Msg("failed to flush aggregator")
+			log.Error().Err(err).Msg("failed to flush aggregator")
 		}
 
 		topNValue.Reset()
@@ -755,7 +755,7 @@ func (bc *blockCursor) mergeTopNResult(r *model.MeasureResult, storedIndexValue 
 
 		buf, err := topNValue.marshal(make([]byte, 0, 128))
 		if err != nil {
-			log.Panic().Err(err).Msg("failed to flush aggregator")
+			log.Error().Err(err).Msg("failed to flush aggregator")
 		}
 
 		r.Fields[i].Values[len(r.Fields[i].Values)-1] = &modelv1.FieldValue{
