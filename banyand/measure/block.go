@@ -1137,9 +1137,21 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 	decoder := GenerateTopNValuesDecoder()
 	defer ReleaseTopNValuesDecoder(decoder)
 
+	topNPostAggregator.Reset()
+
 	uTimestamp := uint64(right.timestamps[rightIdx])
 	marshalBuf := make([]byte, 0, 128)
 	leftVer, rightVer := left.versions[leftIdx], right.versions[rightIdx]
+
+	if len(bi.field.columns) == 0 {
+		for _, c := range right.field.columns {
+			bi.field.columns = append(bi.field.columns, column{
+				name:      c.name,
+				valueType: c.valueType,
+				values:    make([][]byte, 0),
+			})
+		}
+	}
 
 	for idx := range right.field.columns {
 		topNValue.Reset()
