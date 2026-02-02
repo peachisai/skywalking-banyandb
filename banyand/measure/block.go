@@ -1155,26 +1155,38 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 
 	for idx := range right.field.columns {
 		topNValue.Reset()
-		if err := topNValue.Unmarshal(left.field.columns[idx].values[leftIdx], decoder); err != nil {
-			log.Error().Err(err).Msg("failed to unmarshal topN value, skip current batch")
-			// avoid index out-of-bounds issues
-			bi.field.columns[idx].values = append(bi.field.columns[idx].values, []byte{})
-			continue
-		}
 
-		valueName := topNValue.valueName
-		entityTagNames := topNValue.entityTagNames
+		var valueName string
+		var entityTagNames []string
+		hasValidData := false
 
 		putEntitiesToAggregator(topNValue, topNPostAggregator, uTimestamp, leftVer)
+		if err := topNValue.Unmarshal(left.field.columns[idx].values[leftIdx], decoder); err != nil {
+			log.Warn().Err(err).Msg("failed to unmarshal left topN value, ignoring left side")
+		} else {
+			valueName = topNValue.valueName
+			entityTagNames = topNValue.entityTagNames
+			putEntitiesToAggregator(topNValue, topNPostAggregator, uTimestamp, leftVer)
+			hasValidData = true
+		}
 
 		topNValue.Reset()
 		if err := topNValue.Unmarshal(right.field.columns[idx].values[rightIdx], decoder); err != nil {
-			log.Error().Err(err).Msg("failed to unmarshal topN value, skip current batch")
+			log.Warn().Err(err).Msg("failed to unmarshal right topN value, ignoring right side")
+		} else {
+			if !hasValidData {
+				valueName = topNValue.valueName
+				entityTagNames = topNValue.entityTagNames
+			}
+			putEntitiesToAggregator(topNValue, topNPostAggregator, uTimestamp, rightVer)
+			hasValidData = true
+		}
+
+		if !hasValidData {
+			log.Error().Msg("both sides of topN value are malformed, append empty value")
 			bi.field.columns[idx].values = append(bi.field.columns[idx].values, []byte{})
 			continue
 		}
-
-		putEntitiesToAggregator(topNValue, topNPostAggregator, uTimestamp, rightVer)
 
 		topNValue.Reset()
 		topNValue.setMetadata(valueName, entityTagNames)
