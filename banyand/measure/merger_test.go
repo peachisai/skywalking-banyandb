@@ -246,8 +246,8 @@ func Test_mergeTwoBlocks(t *testing.T) {
 								{
 									name: "parameters", valueType: pbv1.ValueTypeStr,
 									values: [][]byte{
-										[]byte("{\"limit\":1000}"),
-										[]byte("{\"limit\":1000}"),
+										[]byte("1000"),
+										[]byte("2000"),
 									},
 								},
 							},
@@ -292,8 +292,8 @@ func Test_mergeTwoBlocks(t *testing.T) {
 								{
 									name: "parameters", valueType: pbv1.ValueTypeStr,
 									values: [][]byte{
-										[]byte("{\"limit\":1000}"),
-										[]byte("{\"limit\":1000}"),
+										[]byte("1000"),
+										[]byte("2000"),
 									},
 								},
 							},
@@ -307,6 +307,102 @@ func Test_mergeTwoBlocks(t *testing.T) {
 				},
 			},
 			want: &blockPointer{block: mergedTopNBlock, bm: blockMetadata{timestamps: timestampsMetadata{min: 1, max: 3}}},
+		},
+		{
+			name: "Merging TopN blocks where the first timestamps are equal",
+			left: &blockPointer{
+				block: block{
+					timestamps: []int64{1, 2},
+					versions:   []int64{1, 2},
+					tagFamilies: []columnFamily{
+						{
+							name: "_topN",
+							columns: []column{
+								{
+									name: "name", valueType: pbv1.ValueTypeStr,
+									values: [][]byte{
+										[]byte("duplicated1"),
+										[]byte("value1"),
+									},
+								},
+								{
+									name: "direction", valueType: pbv1.ValueTypeInt64,
+									values: [][]byte{
+										convert.Int64ToBytes(2),
+										convert.Int64ToBytes(2),
+									},
+								},
+								{
+									name: "group", valueType: pbv1.ValueTypeStr,
+									values: [][]byte{
+										[]byte("duplicated2"),
+										[]byte("value3"),
+									},
+								},
+								{
+									name: "parameters", valueType: pbv1.ValueTypeStr,
+									values: [][]byte{
+										[]byte("1000"),
+										[]byte("1000"),
+									},
+								},
+							},
+						},
+					},
+					field: columnFamily{
+						columns: []column{
+							{name: "value", valueType: pbv1.ValueTypeStr, values: [][]byte{leftTopNBinaryData, []byte("field1")}},
+						},
+					},
+				},
+			},
+			right: &blockPointer{
+				block: block{
+					timestamps: []int64{1, 3},
+					versions:   []int64{2, 3},
+					tagFamilies: []columnFamily{
+						{
+							name: "_topN",
+							columns: []column{
+								{
+									name: "name", valueType: pbv1.ValueTypeStr,
+									values: [][]byte{
+										[]byte("value5"),
+										[]byte("value6"),
+									},
+								},
+								{
+									name: "direction", valueType: pbv1.ValueTypeInt64,
+									values: [][]byte{
+										convert.Int64ToBytes(2),
+										convert.Int64ToBytes(2),
+									},
+								},
+								{
+									name: "group", valueType: pbv1.ValueTypeStr,
+									values: [][]byte{
+										[]byte("value7"),
+										[]byte("value8"),
+									},
+								},
+								{
+									name: "parameters", valueType: pbv1.ValueTypeStr,
+									values: [][]byte{
+										[]byte("1000"),
+										[]byte("1000"),
+									},
+								},
+							},
+						},
+					},
+					field: columnFamily{
+						columns: []column{
+							{name: "value", valueType: pbv1.ValueTypeStr, values: [][]byte{rightTopNBinaryData, []byte("field3")}},
+						},
+					},
+				},
+			},
+			want: &blockPointer{block: mergedTopNBlock2, bm: blockMetadata{timestamps: timestampsMetadata{min: 1, max: 3}}},
 		},
 	}
 
@@ -516,9 +612,9 @@ var mergedTopNBlock = block{
 				{
 					name: "parameters", valueType: pbv1.ValueTypeStr,
 					values: [][]byte{
-						[]byte("{\"limit\":1000}"),
-						[]byte("{\"limit\":1000}"),
-						[]byte("{\"limit\":1000}"),
+						[]byte("1000"),
+						[]byte("1000"),
+						[]byte("2000"),
 					},
 				},
 			},
@@ -527,6 +623,55 @@ var mergedTopNBlock = block{
 	field: columnFamily{
 		columns: []column{
 			{name: "value", valueType: pbv1.ValueTypeStr, values: [][]byte{[]byte("field1"), mergedTopNBinaryData, []byte("field3")}},
+		},
+	},
+}
+
+var mergedTopNBlock2 = block{
+	timestamps: []int64{1, 2, 3},
+	versions:   []int64{1, 3, 4},
+	tagFamilies: []columnFamily{
+		{
+			name: "_topN",
+			columns: []column{
+				{
+					name: "name", valueType: pbv1.ValueTypeStr,
+					values: [][]byte{
+						[]byte("value5"),
+						[]byte("value1"),
+						[]byte("value6"),
+					},
+				},
+				{
+					name: "direction", valueType: pbv1.ValueTypeInt64,
+					values: [][]byte{
+						convert.Int64ToBytes(2),
+						convert.Int64ToBytes(2),
+						convert.Int64ToBytes(2),
+					},
+				},
+				{
+					name: "group", valueType: pbv1.ValueTypeStr,
+					values: [][]byte{
+						[]byte("value7"),
+						[]byte("value3"),
+						[]byte("value8"),
+					},
+				},
+				{
+					name: "parameters", valueType: pbv1.ValueTypeStr,
+					values: [][]byte{
+						[]byte("1000"),
+						[]byte("1000"),
+						[]byte("1000"),
+					},
+				},
+			},
+		},
+	},
+	field: columnFamily{
+		columns: []column{
+			{name: "value", valueType: pbv1.ValueTypeStr, values: [][]byte{mergedTopNBinaryData, []byte("field1"), []byte("field3")}},
 		},
 	},
 }

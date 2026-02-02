@@ -1142,7 +1142,6 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 	leftVer, rightVer := left.versions[leftIdx], right.versions[rightIdx]
 
 	if len(bi.field.columns) == 0 {
-		bi.field.name = right.field.name
 
 		for _, c := range right.field.columns {
 			bi.field.columns = append(bi.field.columns, column{
