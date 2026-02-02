@@ -462,7 +462,7 @@ func parseTopNMeta(b *blockPointer) (modelv1.Sort, int32, error) {
 	paramStr := paramsVal.GetStr().Value
 	params, err := ParseTopNParameters(paramStr)
 	if err != nil {
-		return modelv1.Sort_SORT_UNSPECIFIED, 0, fmt.Errorf("failed to parse topN parameters JSON: %w", err)
+		return modelv1.Sort_SORT_UNSPECIFIED, 0, fmt.Errorf("failed to parse topN parameters : %w", err)
 	}
 
 	return modelv1.Sort(sortVal.GetInt().Value), int32(params.Limit), nil
