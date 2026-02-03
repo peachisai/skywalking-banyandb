@@ -246,8 +246,8 @@ func Test_mergeTwoBlocks(t *testing.T) {
 								{
 									name: "parameters", valueType: pbv1.ValueTypeStr,
 									values: [][]byte{
-										[]byte("{\"limit\":1000}"),
-										[]byte("{\"limit\":1000}"),
+										[]byte("1000"),
+										[]byte("1000"),
 									},
 								},
 							},
@@ -292,8 +292,8 @@ func Test_mergeTwoBlocks(t *testing.T) {
 								{
 									name: "parameters", valueType: pbv1.ValueTypeStr,
 									values: [][]byte{
-										[]byte("{\"limit\":1000}"),
-										[]byte("{\"limit\":1000}"),
+										[]byte("1000"),
+										[]byte("1000"),
 									},
 								},
 							},
@@ -516,9 +516,9 @@ var mergedTopNBlock = block{
 				{
 					name: "parameters", valueType: pbv1.ValueTypeStr,
 					values: [][]byte{
-						[]byte("{\"limit\":1000}"),
-						[]byte("{\"limit\":1000}"),
-						[]byte("{\"limit\":1000}"),
+						[]byte("1000"),
+						[]byte("1000"),
+						[]byte("1000"),
 					},
 				},
 			},
