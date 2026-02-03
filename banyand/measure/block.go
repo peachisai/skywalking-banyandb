@@ -1207,8 +1207,6 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 		bi.field.columns[idx].values = append(bi.field.columns[idx].values, buf)
 	}
 
-	bi.timestamps = append(bi.timestamps, right.timestamps[rightIdx])
-
 	if rightVer >= leftVer {
 		bi.appendTagFamilies(right, rightIdx+1)
 		bi.versions = append(bi.versions, rightVer)
@@ -1216,6 +1214,7 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 		bi.appendTagFamilies(left, leftIdx+1)
 		bi.versions = append(bi.versions, leftVer)
 	}
+	bi.timestamps = append(bi.timestamps, right.timestamps[rightIdx])
 }
 
 func (bi *blockPointer) appendTagFamilies(b *blockPointer, offset int) {
