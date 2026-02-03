@@ -1204,8 +1204,7 @@ func (bi *blockPointer) mergeAndAppendTopN(left *blockPointer, leftIdx int, righ
 		marshalBuf = marshalBuf[:0]
 		buf, err := topNValue.marshal(marshalBuf)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to marshal merged topN value")
-			continue
+			log.Panic().Err(err).Msg("failed to marshal merged topN value")
 		}
 
 		bi.field.columns[idx].values = append(bi.field.columns[idx].values, buf)
