@@ -498,7 +498,7 @@ func Test_mergeTwoBlocks(t *testing.T) {
 					},
 				},
 			},
-			want: &blockPointer{block: mergedTopNBlock2, bm: blockMetadata{timestamps: timestampsMetadata{min: 1, max: 3}}},
+			want: &blockPointer{block: mergedTopNBlock3, bm: blockMetadata{timestamps: timestampsMetadata{min: 1, max: 3}}},
 		},
 	}
 
@@ -529,13 +529,13 @@ var (
 	rightTopNValue = &TopNValue{
 		valueName:      "value",
 		entityTagNames: []string{"entity_id"},
-		values:         []int64{550, 300, 530, 600, 400},
+		values:         []int64{600, 550, 530, 400, 300},
 		entities: [][]*modelv1.TagValue{
-			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
-			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
-			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
 			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_6"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_3"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_5"}}}},
 			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_7"}}}},
+			{{Value: &modelv1.TagValue_Str{Str: &modelv1.Str{Value: "entity_4"}}}},
 		},
 	}
 
@@ -725,7 +725,7 @@ var mergedTopNBlock = block{
 
 var mergedTopNBlock2 = block{
 	timestamps: []int64{1, 2, 3},
-	versions:   []int64{1, 3, 4},
+	versions:   []int64{2, 2, 3},
 	tagFamilies: []columnFamily{
 		{
 			name: "_topN",
@@ -768,6 +768,55 @@ var mergedTopNBlock2 = block{
 	field: columnFamily{
 		columns: []column{
 			{name: "value", valueType: pbv1.ValueTypeStr, values: [][]byte{mergedTopNBinaryData, []byte("field1"), []byte("field3")}},
+		},
+	},
+}
+
+var mergedTopNBlock3 = block{
+	timestamps: []int64{1, 2, 3},
+	versions:   []int64{2, 2, 3},
+	tagFamilies: []columnFamily{
+		{
+			name: "_topN",
+			columns: []column{
+				{
+					name: "name", valueType: pbv1.ValueTypeStr,
+					values: [][]byte{
+						[]byte("value5"),
+						[]byte("value1"),
+						[]byte("value6"),
+					},
+				},
+				{
+					name: "direction", valueType: pbv1.ValueTypeInt64,
+					values: [][]byte{
+						convert.Int64ToBytes(2),
+						convert.Int64ToBytes(2),
+						convert.Int64ToBytes(2),
+					},
+				},
+				{
+					name: "group", valueType: pbv1.ValueTypeStr,
+					values: [][]byte{
+						[]byte("value7"),
+						[]byte("value3"),
+						[]byte("value8"),
+					},
+				},
+				{
+					name: "parameters", valueType: pbv1.ValueTypeStr,
+					values: [][]byte{
+						[]byte("1000"),
+						[]byte("1000"),
+						[]byte("1000"),
+					},
+				},
+			},
+		},
+	},
+	field: columnFamily{
+		columns: []column{
+			{name: "value", valueType: pbv1.ValueTypeStr, values: [][]byte{rightTopNBinaryData, []byte("field1"), []byte("field3")}},
 		},
 	},
 }
